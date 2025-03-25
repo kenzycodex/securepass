@@ -1,16 +1,26 @@
-📦Strong-Password-Generator
- ┣ 📂clip
- ┃ ┣ 📜copyq.py
- ┃ ┣ 📜pbcopy_copy.py
- ┃ ┣ 📜powershell_copy.py
- ┃ ┣ 📜pyperclip.py
- ┃ ┣ 📜wlclip.py
- ┃ ┣ 📜xclip.py
+### 🔒 SecurePass - Advanced Password Generator
+
+```
+ ┣ 📂password_generator
+ ┃ ┣ 📂clipboard
+ ┃ ┃ ┣ 📜copyq.py
+ ┃ ┃ ┣ 📜pbcopy.py
+ ┃ ┃ ┣ 📜powershell.py
+ ┃ ┃ ┣ 📜pyperclip.py
+ ┃ ┃ ┣ 📜wlclip.py
+ ┃ ┃ ┣ 📜xclip.py
+ ┃ ┃ ┗ 📜__init__.py
+ ┃ ┣ 📂utils
+ ┃ ┃ ┣ 📜commands.py
+ ┃ ┃ ┣ 📜vprint.py
+ ┃ ┃ ┗ 📜__init__.py
+ ┃ ┣ 📜cli.py
+ ┃ ┣ 📜generator.py
  ┃ ┗ 📜__init__.py
- ┣ 📂utils
- ┃ ┣ 📜commands.py
- ┃ ┗ 📜vprint.py
  ┣ 📜.gitignore
- ┣ 📜generator.py
- ┣ 📜passgen.py
- ┗ 📜README.md
+ ┣ 📜PROJECT_STRUCTURE.md
+ ┣ 📜pyproject.toml
+ ┣ 📜README.md
+ ┣ 📜requirements.txt
+ ┗ 📜setup.cfg
+ ```
