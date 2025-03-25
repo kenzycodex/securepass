@@ -1,0 +1,216 @@
+📦Strong-Password-Generator
+ ┣ 📂clip
+ ┃ ┣ 📜copyq.py
+ ┃ ┣ 📜pbcopy_copy.py
+ ┃ ┣ 📜powershell_copy.py
+ ┃ ┣ 📜pyperclip.py
+ ┃ ┣ 📜wlclip.py
+ ┃ ┣ 📜xclip.py
+ ┃ ┗ 📜__init__.py
+ ┣ 📂utils
+ ┃ ┣ 📜commands.py
+ ┃ ┗ 📜vprint.py
+ ┣ 📜.gitignore
+ ┣ 📜generator.py
+ ┣ 📜passgen.py
+ ┗ 📜README.md
+
+Help me to update this with a env kinda likke generate the dependencies  env for the python project how  it is  standardly done and also the requirements.txt and also help me to correct and update the code files correctly and make them connected well and make it well standard and advanced and work well and cool without causing any disruptions or errors
+
+
+# passgen.py
+
+import generator
+import clip
+
+import argparse
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("passgen.py")
+
+    parser.add_argument("-l", "--length", default=20, required=False,
+                        help="Length pf password", type=int)
+    parser.add_argument("-c", "--charset", default="full", required=False,
+                        choices=["full", "alnum", "letters", "digits"],
+                        help="Character set. Allowed: `full`, `alnum`, `letters`, `digits`")
+    parser.add_argument("-v", "--verbose", action="store_true")
+
+    args = parser.parse_args()
+
+    generated_password = generator.PasswordGenerator.generate_password(
+        args.length, charset=args.charset)
+
+    print("Generated Password:", generated_password)
+
+    clip.ClipboardDriver.copy_password(
+        generated_password, verbose=args.verbose)
+
+    print("Password copied to clipboard.")
+
+# generator.py
+
+import random
+import string
+
+
+class PasswordGenerator:
+    def generate_password(length=20, charset="full"):
+        match charset:
+            case "full":
+                characters = string.ascii_letters \
+                    + string.digits \
+                    + string.punctuation
+            case "alnum":
+                characters = string.ascii_letters + string.digits
+            case "letters":
+                characters = string.ascii_letters
+            case "digits":
+                characters = string.digits
+
+        password = ''.join(random.choice(characters) for _ in range(length))
+        return password
+
+# utils/commands.py
+
+import subprocess
+
+
+def run_command_stdin(command: list[str], stdin: str):
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE,
+                            stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    proc.communicate(input=stdin.encode())
+
+# utils/vprint.py
+
+import sys
+
+
+def vprint(verbose, message):
+    if verbose:
+        print(message, file=sys.stderr)
+
+# clip/xclip.py
+
+import utils.vprint
+import utils.commands
+
+
+def xclip_copy(string, verbose):
+    try:
+        utils.commands.run_command_stdin(["xclip"], string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with xclip")
+    except FileNotFoundError:
+        utils.vprint.vprint(verbose, "[WARN] xclip not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on xclip: {err}")
+
+
+# clip/wlclip.py
+
+import utils.vprint
+import utils.commands
+
+
+def wlclip_copy(string, verbose):
+    try:
+        utils.commands.run_command_stdin(["wl-copy"], string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with wl-clip")
+    except FileNotFoundError:
+        utils.vprint.vprint(verbose, "[WARN] wl-clip not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on wl-clip: {err}")
+
+
+# clip/pyperclip.py
+
+import utils.vprint
+
+
+def pyperclip_copy(string, verbose):
+    try:
+        import pyperclip
+        pyperclip.copy(string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with Pyperclip")
+    except ImportError:
+        utils.vprint.vprint(verbose, "[WARN] Pyperclip not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on Pyperclip: {err}")
+
+
+# clip/powershell_copy.py
+
+import utils.vprint
+import utils.commands
+
+
+def powershell_copy(string, verbose):
+    try:
+        utils.commands.run_command_stdin(
+            ["powershell.exe", "-c", "Set-Clipboard"], string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with powershell")
+    except FileNotFoundError:
+        utils.vprint.vprint(verbose, "[WARN] powershell not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on powershell: {err}")
+
+
+# clip/pbcopy_copy.py
+
+import utils.vprint
+import utils.commands
+
+
+def pbcopy_copy(string, verbose):
+    try:
+        utils.commands.run_command_stdin(["pbcopy"], string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with pbcopy")
+    except FileNotFoundError:
+        utils.vprint.vprint(verbose, "[WARN] pbcopy not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on pbcopy: {err}")
+
+
+# clip/copyq.py
+
+import utils.commands
+import utils.vprint
+
+
+def copyq_copy(string, verbose):
+    try:
+        utils.commands.run_command_stdin(["copyq", "copy", "-"], string)
+        utils.vprint.vprint(verbose, "[INFO] string copied with CopyQ")
+    except FileNotFoundError:
+        utils.vprint.vprint(verbose, "[WARN] CopyQ not found")
+    except Exception as e:
+        err = str(e)
+        utils.vprint.vprint(verbose, f"[ERR] Error on CopyQ: {err}")
+
+
+# clip/__init__.py
+
+from .pyperclip import pyperclip_copy
+from .copyq import copyq_copy
+from .xclip import xclip_copy
+from .wlclip import wlclip_copy
+from .powershell_copy import powershell_copy
+from .pbcopy_copy import pbcopy_copy
+
+
+class ClipboardDriver:
+    def copy_password(password, verbose=False):
+        """
+        CROSS-PLATFORM function to copy a string into clipboard.
+        """
+
+        pyperclip_copy(password, verbose)
+        copyq_copy(password, verbose)
+        xclip_copy(password, verbose)
+        wlclip_copy(password, verbose)
+        powershell_copy(password, verbose)
+        pbcopy_copy(password, verbose)
