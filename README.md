@@ -1,118 +1,156 @@
-# 🔒 SecurePass - Advanced Password Generator
+# SecurePass
 
-![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
+A secure, cross-platform password generator with clipboard integration.
+
+![Python Versions](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/github/actions/workflow/status/kenzycodex/securepass/tests.yml?label=tests)
-![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)
+![Test Coverage](https://img.shields.io/badge/coverage-71%25-yellow)
 
-A secure, cross-platform password generator with clipboard integration and advanced features.
+## Features
 
-## ✨ Features
+- Generate secure random passwords with customizable parameters
+- Cross-platform clipboard integration (Windows, macOS, Linux)
+- Multiple clipboard backend support (PowerShell, pbcopy, xclip, wl-copy, CopyQ, pyperclip)
+- Command-line interface for quick password generation
+- Comprehensive test suite with platform-specific tests
+- Backward compatibility with previous `password_generator` package
 
-- 🔐 Generate cryptographically secure passwords using `random.SystemRandom()`
-- 📋 Automatic clipboard copying with multiple fallback methods
-- 🖥️ Cross-platform support (Windows, macOS, Linux)
-- ⚙️ Multiple character sets:
-  - `full`: Letters, numbers, and symbols (default)
-  - `alnum`: Only letters and numbers
-  - `letters`: Only letters
-  - `digits`: Only numbers
-- 📏 Customizable password length (8-128 characters)
-- 🔍 Verbose mode for debugging
-- 🚫 Exclude similar characters (e.g., 1, l, I)
-- 🛡️ No password history or logging
-
-## 📦 Installation
+## Installation
 
 ```bash
+# Install from PyPI
 pip install securepass
-```
 
-For development:
-```bash
-git clone https://github.com/kenzycodex/securepass.git
+# Or install from source
+git clone https://github.com/yourusername/securepass.git
 cd securepass
-pip install -e ".[dev]"
+pip install -e .
 ```
 
-## 🚀 Usage
+## Usage
 
 ### Command Line
+
 ```bash
-passgen --length 20 --charset full -v
+# Generate a 16-character alphanumeric password
+passgen -l 16 -c alnum
+
+# Generate a password with all character types and copy to clipboard
+passgen -l 20 -c all --copy
+
+# Generate a password with verbose output
+passgen -l 12 -c special -v
 ```
 
 ### Python API
+
 ```python
+from securepass import PasswordGenerator, ClipboardDriver
+
+# Create a password generator
+generator = PasswordGenerator()
+
+# Generate a secure password
+password = generator.generate(length=16, char_types="alnum")
+print(f"Generated password: {password}")
+
+# Copy password to clipboard
+ClipboardDriver.copy_password(password, secure=True)
+```
+
+## Configuration
+
+The following character types are supported:
+
+- `alpha`: Lowercase and uppercase letters
+- `alnum`: Letters and numbers
+- `digit`: Numbers only
+- `lower`: Lowercase letters only
+- `upper`: Uppercase letters only
+- `special`: Special characters only
+- `all`: All character types
+
+## Clipboard Support
+
+SecurePass provides cross-platform clipboard support with multiple backends:
+
+| Platform | Supported Backends |
+|----------|-------------------|
+| Windows  | PowerShell, pyperclip, CopyQ |
+| macOS    | pbcopy, pyperclip, CopyQ |
+| Linux    | xclip, wl-copy, pyperclip, CopyQ |
+
+The clipboard system automatically tries different methods until it finds one that works on your system.
+
+## Development
+
+### Setting up the development environment
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/securepass.git
+cd securepass
+
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in development mode
+pip install -e .
+
+# Install development dependencies
+pip install pytest pytest-cov pytest-mock
+```
+
+### Running tests
+
+The project includes a comprehensive test suite with platform-specific tests:
+
+```bash
+# Run all tests appropriate for your platform
+python run_tests.py
+
+# Run tests with coverage report
+python run_tests.py --coverage
+
+# Run specific test modules
+python run_tests.py --module clipboard,generator
+```
+
+### Refreshing the package installation
+
+If you encounter issues with the package installation or entry points, you can use the refresh script:
+
+```bash
+python refresh_package.py
+```
+
+## Compatibility
+
+SecurePass provides backward compatibility with the previous `password_generator` package. Old import statements and class names should continue to work but will raise deprecation warnings:
+
+```python
+# Old import (will work but shows deprecation warning)
+from password_generator import PasswordGenerator
+
+# New import (recommended)
 from securepass import PasswordGenerator
-
-# Generate password
-password = PasswordGenerator.generate(
-    length=16,
-    charset="full",
-    exclude_similar=True
-)
 ```
 
-## 🛠️ Development
+## License
 
-### Running Tests
-```bash
-pytest tests/ --cov=securepass --cov-report=term-missing
-```
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Code Formatting
-```bash
-black .
-flake8
-mypy .
-```
+## Contributing
 
-## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m "Add amazing feature"`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Add your changes
+4. Run tests to ensure they pass
+5. Submit a pull request
 
-## 📜 License
+## Acknowledgments
 
-MIT - See [LICENSE](LICENSE) for details.
-
-## Future Feature Ideas
-
-1. **Password Strength Meter**:
-   - Implement zxcvbn or similar algorithm
-   - Add entropy calculation
-
-2. **Password History**:
-   - Optional encrypted local storage
-   - Temporary memory-only history
-
-3. **Advanced Options**:
-   ```python
-   PasswordGenerator.generate(
-       length=16,
-       min_uppercase=2,
-       min_digits=2,
-       min_special=1,
-       exclude_chars="l1O0"
-   )
-   ```
-
-4. **GUI Version**:
-   - Tkinter simple interface
-   - PyQt advanced interface
-
-5. **Browser Extension**:
-   - Generate passwords directly in browser
-   - Auto-fill forms
-
-6. **API Server**:
-   - REST endpoint for password generation
-   - Rate limiting and authentication
-
-7. **Password Analysis**:
-   - Check against haveibeenpwned API
-   - Similarity checker for existing passwords
+- Thanks to all the contributors who have helped improve this project.

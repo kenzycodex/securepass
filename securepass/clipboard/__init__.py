@@ -1,3 +1,4 @@
+#securepass/clipboard/__init__.py
 import sys
 from typing import List, Callable
 from .pyperclip import pyperclip_copy

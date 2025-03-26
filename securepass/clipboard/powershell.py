@@ -1,5 +1,6 @@
-from password_generator.utils.vprint import vprint
-from password_generator.utils.commands import run_command_stdin
+#securepass/clipboard/powershell.py
+from securepass.utils.vprint import vprint
+from securepass.utils.commands import run_command_stdin
 
 
 def powershell_copy(string: str, verbose: bool = False) -> None:
