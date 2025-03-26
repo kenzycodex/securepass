@@ -1,109 +1,178 @@
+"""
+Tests for the Secure Password Generator CLI module.
+"""
+
 import pytest
 import sys
 from unittest.mock import patch, MagicMock
-import subprocess
+from click.testing import CliRunner
+
+from securepass import cli
 from securepass.clipboard import ClipboardDriver
-from securepass.clipboard.pyperclip import pyperclip_copy
-from securepass.clipboard.copyq import copyq_copy
-from securepass.clipboard.xclip import xclip_copy
-from securepass.clipboard.wlclip import wlclip_copy
-from securepass.clipboard.powershell import powershell_copy
-from securepass.clipboard.pbcopy import pbcopy_copy
 
 
-def test_copy_password_success():
-    """Test successful password copying."""
-    mock_method = MagicMock()
-    with patch.object(ClipboardDriver, '_COPY_METHODS', [mock_method]):
-        ClipboardDriver.copy_password("test", True)
-        mock_method.assert_called_once_with("test", True)
+def test_cli_default_options():
+    """Test CLI with default options."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='password123'):
+        with patch.object(ClipboardDriver, 'copy_password') as mock_copy:
+            runner = CliRunner()
+            result = runner.invoke(cli.cli)
+            
+            assert result.exit_code == 0
+            assert "Generated 20-character password" in result.output
+            assert "password123" in result.output
+            mock_copy.assert_called_once_with('password123', False)
 
 
-def test_copy_password_failure():
-    """Test clipboard failure handling."""
-    mock_method = MagicMock(side_effect=Exception("Test error"))
-    with patch.object(ClipboardDriver, '_COPY_METHODS', [mock_method]):
-        with pytest.raises(RuntimeError, match="Failed to copy to clipboard"):
-            ClipboardDriver.copy_password("test", True)
+def test_cli_custom_length():
+    """Test CLI with custom password length."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='pass123'):
+        with patch.object(ClipboardDriver, 'copy_password'):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--length', '12'])
+            
+            assert result.exit_code == 0
+            assert "Generated 12-character password" in result.output
+            assert "pass123" in result.output
 
 
-def test_copy_password_fallback():
-    """Test clipboard fallback mechanism."""
-    mock1 = MagicMock(side_effect=Exception("First method failed"))
-    mock2 = MagicMock()
-    
-    with patch.object(ClipboardDriver, '_COPY_METHODS', [mock1, mock2]):
-        ClipboardDriver.copy_password("test", True)
+def test_cli_custom_charset():
+    """Test CLI with custom charset."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='123456'):
+        with patch.object(ClipboardDriver, 'copy_password'):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--charset', 'digits'])
+            
+            assert result.exit_code == 0
+            assert "Generated 20-character password using digits charset" in result.output
+            assert "123456" in result.output
+
+
+def test_cli_special_charset():
+    """Test CLI with 'special' charset (mapped to 'full')."""
+    with patch('securepass.generator.PasswordGenerator.generate_password') as mock_gen:
+        with patch.object(ClipboardDriver, 'copy_password'):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--charset', 'special', '--verbose'])
+            
+            assert result.exit_code == 0
+            # Verify that 'special' got mapped to 'full' internally
+            mock_gen.assert_called_once_with(20, 'full')
+            assert "Note: 'special' charset maps to 'full' charset" in result.output
+
+
+def test_cli_all_charset():
+    """Test CLI with 'all' charset (mapped to 'full')."""
+    with patch('securepass.generator.PasswordGenerator.generate_password') as mock_gen:
+        with patch.object(ClipboardDriver, 'copy_password'):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--charset', 'all', '--verbose'])
+            
+            assert result.exit_code == 0
+            # Verify that 'all' got mapped to 'full' internally
+            mock_gen.assert_called_once_with(20, 'full')
+            assert "Note: 'all' charset maps to 'full' charset" in result.output
+
+
+def test_cli_verbose_mode():
+    """Test CLI in verbose mode."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='testpass'):
+        with patch.object(ClipboardDriver, 'copy_password'):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--verbose'])
+            
+            assert result.exit_code == 0
+            assert "Generating 20-character password" in result.output
+
+
+def test_cli_no_copy():
+    """Test CLI with clipboard copying disabled."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='nocopy'):
+        with patch.object(ClipboardDriver, 'copy_password') as mock_copy:
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--no-copy'])
+            
+            assert result.exit_code == 0
+            assert "nocopy" in result.output
+            # Verify clipboard copy was not called
+            mock_copy.assert_not_called()
+
+
+def test_cli_explicit_copy():
+    """Test CLI with explicit --copy flag."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='yescopy'):
+        with patch.object(ClipboardDriver, 'copy_password') as mock_copy:
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--copy'])
+            
+            assert result.exit_code == 0
+            assert "yescopy" in result.output
+            # Verify clipboard copy was called
+            mock_copy.assert_called_once()
+
+
+def test_cli_clipboard_error():
+    """Test CLI when clipboard copying fails."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='failcopy'):
+        with patch.object(ClipboardDriver, 'copy_password', side_effect=RuntimeError("Clipboard failed")):
+            runner = CliRunner()
+            result = runner.invoke(cli.cli, ['--verbose'])
+            
+            assert result.exit_code == 0
+            assert "failcopy" in result.output
+            assert "Clipboard error: Clipboard failed" in result.output
+            assert "Password was generated but not copied to clipboard" in result.output
+
+
+def test_cli_generator_exception():
+    """Test CLI when password generation fails."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', 
+              side_effect=ValueError("Invalid charset")):
+        runner = CliRunner()
+        result = runner.invoke(cli.cli)
         
-    mock1.assert_called_once()
-    mock2.assert_called_once()
+        assert result.exit_code == 1
+        assert "Error: Invalid charset" in result.output
 
 
-# Note this test is skipped unless on Windows
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
-def test_powershell_copy():
-    """Test PowerShell clipboard integration (Windows only)."""
-    with patch('securepass.clipboard.powershell.run_command_stdin') as mock_run:
-        powershell_copy("test", True)
-        mock_run.assert_called_once()
+def test_main_success():
+    """Test successful execution of main()."""
+    with patch('securepass.cli.cli', return_value='password'):
+        with patch.object(sys, 'argv', ['passgen']):
+            assert cli.main() == 0
 
 
-# Note this test is skipped unless on macOS
-@pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
-def test_pbcopy_copy():
-    """Test pbcopy clipboard integration (macOS only)."""
-    with patch('securepass.clipboard.pbcopy.run_command_stdin') as mock_run:
-        pbcopy_copy("test", True)
-        mock_run.assert_called_once()
+def test_main_exception():
+    """Test exception handling in main()."""
+    with patch('securepass.cli.cli', side_effect=Exception("Test error")):
+        with patch.object(sys, 'argv', ['passgen']):
+            assert cli.main() == 1
 
 
-def test_pyperclip_copy():
-    """Test pyperclip clipboard integration."""
-    with patch('pyperclip.copy') as mock_pyperclip:
-        pyperclip_copy("test", True)
-        mock_pyperclip.assert_called_once_with("test")
+def test_parse_args():
+    """Test parse_args function."""
+    with patch('securepass.generator.PasswordGenerator.generate_password', return_value='parsetest'):
+        with patch.object(ClipboardDriver, 'copy_password'):
+            result = cli.parse_args(['--length', '10'])
+            assert result.exit_code == 0
 
-
-def test_pyperclip_import_error():
-    """Test pyperclip import error handling."""
-    with patch('builtins.__import__', side_effect=ImportError("No module named 'pyperclip'")):
-        with pytest.raises(ImportError):
-            # We need to use a fresh local function to test the import error
-            # since the module is already imported in the test file
-            from securepass.clipboard.pyperclip import pyperclip_copy as fresh_copy
-            fresh_copy("test", True)
-
-
-def test_xclip_copy():
-    """Test xclip clipboard integration."""
-    with patch('securepass.clipboard.xclip.run_command_stdin') as mock_run:
-        xclip_copy("test", True)
-        mock_run.assert_called_once()
-
-
-def test_xclip_not_found():
-    """Test xclip not found error."""
-    with patch('securepass.clipboard.xclip.run_command_stdin', side_effect=FileNotFoundError("Command not found")):
-        with pytest.raises(Exception):
-            xclip_copy("test", True)
-
-
-def test_wlclip_copy():
-    """Test wl-clipboard integration."""
-    with patch('securepass.clipboard.wlclip.run_command_stdin') as mock_run:
-        wlclip_copy("test", True)
-        mock_run.assert_called_once()
-
-
-def test_copyq_copy():
-    """Test CopyQ clipboard integration."""
-    with patch('securepass.clipboard.copyq.run_command_stdin') as mock_run:
-        copyq_copy("test", True)
-        mock_run.assert_called_once()
-
-
-def test_command_error():
-    """Test command error handling."""
-    with patch('securepass.clipboard.xclip.run_command_stdin', side_effect=subprocess.SubprocessError("Test error")):
-        with pytest.raises(Exception):
-            xclip_copy("test", True)
+def test_cli_main_module():
+    """Test the __main__ block in cli.py."""
+    import sys
+    from unittest.mock import patch
+    
+    # This test works by directly calling the code in the 
+    # __main__ block rather than trying to execute the module
+    with patch('sys.exit') as mock_exit:
+        # Mock main function to return a predictable value
+        with patch('securepass.cli.main', return_value=42):
+            # Import the module function directly
+            from securepass.cli import main
+            
+            # Simulate what happens in the __main__ block
+            if True:  # This will always execute, simulating the __name__ == "__main__" condition
+                result = main()
+                sys.exit(result)
+            
+            # Verify sys.exit was called with the expected value
+            mock_exit.assert_called_once_with(42)

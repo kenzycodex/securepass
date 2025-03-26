@@ -15,19 +15,29 @@ from securepass.utils.vprint import vprint
 
 @click.command()
 @click.option('-l', '--length', default=20, type=click.IntRange(8, 128), help='Password length (8-128 characters)')
-@click.option('-c', '--charset', type=click.Choice(['full', 'alnum', 'letters', 'digits']), default='full', help='Character set to use')
+@click.option('-c', '--charset', 
+              type=click.Choice(['full', 'alnum', 'letters', 'digits', 'special', 'all']), 
+              default='full', 
+              help='Character set to use')
 @click.option('-v', '--verbose', is_flag=True, help='Enable verbose output')
-@click.option('--no-copy', is_flag=True, help='Disable clipboard copying')
-def cli(length: int, charset: str, verbose: bool, no_copy: bool) -> str:
+@click.option('--copy/--no-copy', default=True, help='Enable/disable clipboard copying')
+def cli(length: int, charset: str, verbose: bool, copy: bool) -> str:
     """Generate secure passwords and optionally copy to clipboard."""
     try:
         # Use built-in click echo for verbose output to ensure it's captured
         if verbose:
             click.echo(f"Generating {length}-character password using {charset} charset", err=True)
         
-        password = PasswordGenerator.generate_password(length, charset)
+        # Map 'special' and 'all' to 'full' for backward compatibility
+        generator_charset = charset
+        if charset in ['special', 'all']:
+            generator_charset = 'full'
+            if verbose:
+                click.echo(f"Note: '{charset}' charset maps to 'full' charset", err=True)
         
-        if not no_copy:
+        password = PasswordGenerator.generate_password(length, generator_charset)
+        
+        if copy:
             try:
                 ClipboardDriver.copy_password(password, verbose)
                 if verbose:

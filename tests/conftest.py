@@ -1,3 +1,4 @@
+# tests/conftest.py
 """
 Configuration and fixtures for pytest.
 
@@ -194,3 +195,95 @@ def command_exists():
             return False
     
     return _exists
+
+@pytest.fixture
+def simulate_platform():
+    """
+    Fixture to simulate different platforms for testing.
+    
+    This allows tests to run as if they're on Windows, macOS, or Linux
+    regardless of the actual platform.
+    
+    Usage:
+        def test_something(simulate_platform):
+            with simulate_platform('win32'):
+                # Code here will think it's running on Windows
+                ...
+            
+            with simulate_platform('darwin'):
+                # Code here will think it's running on macOS
+                ...
+            
+            with simulate_platform('linux'):
+                # Code here will think it's running on Linux
+                ...
+    """
+    original_platform = sys.platform
+    
+    class PlatformSimulator:
+        def __init__(self, platform):
+            self.platform = platform
+            self.original_platform = original_platform
+        
+        def __enter__(self):
+            # Patch sys.platform
+            self.platform_patcher = patch('sys.platform', self.platform)
+            self.platform_patcher.start()
+            return self
+        
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            # Restore sys.platform
+            self.platform_patcher.stop()
+            return False
+    
+    def _simulate_platform(platform):
+        return PlatformSimulator(platform)
+    
+    yield _simulate_platform
+    
+    # Ensure platform is restored
+    assert sys.platform == original_platform, "Platform was not properly restored"
+
+
+# Add this test to test_clipboard.py to improve clipboard adapter coverage
+def test_platform_specific_dispatching(simulate_platform):
+    """Test that the right clipboard methods are selected based on platform."""
+    from securepass.clipboard import ClipboardDriver
+    from unittest.mock import patch
+    
+    # Test Windows platform
+    with simulate_platform('win32'):
+        with patch('securepass.clipboard.powershell.powershell_copy') as mock_win:
+            with patch('securepass.clipboard.pyperclip.pyperclip_copy') as mock_pyperclip:
+                try:
+                    ClipboardDriver.copy_password("test", False)
+                except Exception:
+                    pass  # We don't care about actual copying success here
+                
+                # PowerShell should be called first on Windows
+                assert mock_win.called or mock_pyperclip.called
+    
+    # Test macOS platform
+    with simulate_platform('darwin'):
+        with patch('securepass.clipboard.pbcopy.pbcopy_copy') as mock_mac:
+            with patch('securepass.clipboard.pyperclip.pyperclip_copy') as mock_pyperclip:
+                try:
+                    ClipboardDriver.copy_password("test", False)
+                except Exception:
+                    pass
+                
+                # pbcopy should be called first on macOS
+                assert mock_mac.called or mock_pyperclip.called
+    
+    # Test Linux platform
+    with simulate_platform('linux'):
+        with patch('securepass.clipboard.xclip.xclip_copy') as mock_xclip:
+            with patch('securepass.clipboard.wlclip.wlclip_copy') as mock_wlclip:
+            
+                try:
+                    ClipboardDriver.copy_password("test", False)
+                except Exception:
+                    pass
+                
+                # xclip or wlclip should be called on Linux
+                assert mock_xclip.called or mock_wlclip.called

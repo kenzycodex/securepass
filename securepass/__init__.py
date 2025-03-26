@@ -8,10 +8,12 @@ This package provides:
 """
 
 __version__ = "1.0.0"
-__all__ = ["PasswordGenerator", "ClipboardDriver"]
+__author__ = "SecurePass Team"
+__all__ = ["PasswordGenerator", "ClipboardDriver", "main"]
 
 from .generator import PasswordGenerator
 from .clipboard import ClipboardDriver
+from .cli import main  # Expose main at the package level
 
 try:
     from .compatibility import install_aliases

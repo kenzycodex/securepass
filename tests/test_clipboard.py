@@ -1,3 +1,4 @@
+# tests/test_clipboard.py
 """
 Tests for clipboard integration functionality.
 

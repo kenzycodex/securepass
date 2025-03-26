@@ -40,6 +40,15 @@ passgen -l 20 -c all --copy
 
 # Generate a password with verbose output
 passgen -l 12 -c special -v
+
+# Using the installed command
+passgen --length 16 --charset full
+
+# With options
+passgen -l 20 -c alnum -v
+
+# Direct module execution
+python -m securepass --length 24 --charset full
 ```
 
 ### Python API
